@@ -80,7 +80,7 @@ export function WordleApp() {
                 onClick={actions.startGame}
                 className="w-full rounded-[2px] bg-[var(--red)] px-5 py-3.5 font-[family-name:var(--font-mono)] text-[13px] font-semibold tracking-wide text-[var(--paper)] uppercase shadow-[0_6px_0_var(--red-deep)] transition-colors hover:bg-[var(--red-deep)] focus-visible:ring-2 focus-visible:ring-[var(--teal)] focus-visible:outline-none"
               >
-                Take a number →
+                Game on! →
               </button>
             </div>
           )}

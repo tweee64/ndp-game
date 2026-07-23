@@ -39,6 +39,16 @@ export const WORD_BANK: Record<RoundCategory, WordEntry[]> = {
       "PADANG",
       "The historic open field beside City Hall that has hosted National Day Parade marches for decades.",
     ),
+    word(
+      "WAYANG",
+      "To put on a **fake show** or performance — especially in front of the boss.",
+    ),
+    word("KAYPOH", "A **busybody** who can't help poking into everyone else's business."),
+    word(
+      "KENA",
+      "To get hit with something bad or unlucky — **'I always kena the worst luck.'**",
+    ),
+    word("ATAS", "Fancy, posh, or **high-class** — sometimes said to poke fun at snobbery."),
   ],
   kopitiam: [
     word(
@@ -50,6 +60,7 @@ export const WORD_BANK: Record<RoundCategory, WordEntry[]> = {
       "DABAO",
       "To **takeaway/pack** your food instead of eating in — a kopitiam-counter essential.",
     ),
+    word("MAKAN", "The go-to word for **'eat'** — as in 'let's go makan!'"),
   ],
   slang: [
     word(
@@ -63,6 +74,19 @@ export const WORD_BANK: Record<RoundCategory, WordEntry[]> = {
     word("PAISEH", "Feeling shy, embarrassed, or awkward about something."),
     word("GOSTAN", "To reverse a vehicle — from the English 'go astern'."),
     word("ALAMAK", "Exclamation of shock, dismay, or surprise."),
+    word("BOLEH", "Malay for **'can do'** or possible — a can-do attitude in one word."),
+    word("CHEEM", "Something so complex or deep it leaves you utterly **confused**."),
+    word("CHIONG", "To **rush** or give it your all to reach the finish line."),
+    word("DIAM", "A blunt way to tell someone to **be quiet**."),
+    word("HUAT", "Hokkien for **'to prosper'** — shouted for luck and fortune."),
+    word("LOBANG", "A tip-off, opportunity, or **insider deal** worth knowing about."),
+    word("SIAN", "Feeling **bored**, weary, or just fed up with everything."),
+    word("SIAO", "Hokkien for **crazy** — used when something (or someone) is out of line."),
+    word("STEADY", "To be in agreement, praised, or **officially a couple**."),
+    word("SWEE", "A compliment for something **beautiful** or spot-on."),
+    word("TOLONG", "A cry for **help** — Malay for 'please assist'."),
+    word("WALAO", "An exclamation of **shock** or disbelief."),
+    word("SHAG", "Feeling utterly **exhausted** after a big effort."),
     word(
       "BLUR",
       "Confused, clueless, or slow to catch on to what's happening.",
