@@ -3,4 +3,163 @@
 @theme {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+
+  /* SG61 Word Ticket theme tokens (ported from how-singaporean-are-you_1.html) */
+  --color-ticket-red: #be2a2a;
+  --color-ticket-red-deep: #8f1b1b;
+  --color-ticket-paper: #faf6ec;
+  --color-ticket-paper-shadow: #e4dcc8;
+  --color-ticket-ink: #2b2622;
+  --color-ticket-gold: #e8b23d;
+  --color-ticket-teal: #3f6f68;
+  --color-ticket-pink: #c23b6b;
 }
+
+:root {
+  --red: #be2a2a;
+  --red-deep: #8f1b1b;
+  --paper: #faf6ec;
+  --paper-shadow: #e4dcc8;
+  --ink: #2b2622;
+  --gold: #e8b23d;
+  --teal: #3f6f68;
+  --pink: #c23b6b;
+}
+
+/* ---- SG61 Word Ticket ---- */
+
+body:has(.ticket-stage) {
+  min-height: 100vh;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0.05) 0px,
+      rgba(0, 0, 0, 0.05) 2px,
+      transparent 2px,
+      transparent 15px
+    ),
+    radial-gradient(ellipse at 50% -10%, var(--red-deep), var(--red) 60%);
+}
+
+.ticket-card {
+  background-color: var(--paper);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-blend-mode: multiply;
+  position: relative;
+}
+
+.ticket-card::before,
+.ticket-card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 16px;
+  background-image: radial-gradient(
+    circle at 8px 8px,
+    var(--red-deep) 7px,
+    transparent 7.2px
+  );
+  background-size: 24px 16px;
+  background-repeat: repeat-x;
+  opacity: 0.9;
+}
+.ticket-card::before {
+  top: -8px;
+}
+.ticket-card::after {
+  bottom: -8px;
+  transform: scaleY(-1);
+}
+
+.ticket-inner {
+  transition:
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+.ticket-inner.feed-out,
+.ticket-inner.feed-in {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+@keyframes ticket-feed-in {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.ticket-feed {
+  animation: ticket-feed-in 220ms ease;
+}
+
+@keyframes ticket-shake {
+  10%,
+  90% {
+    transform: translateX(-2px);
+  }
+  20%,
+  80% {
+    transform: translateX(3px);
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(-5px);
+  }
+  40%,
+  60% {
+    transform: translateX(5px);
+  }
+}
+.ticket-shake {
+  animation: ticket-shake 400ms;
+}
+
+@keyframes ticket-tile-flip {
+  0% {
+    transform: rotateX(0deg);
+  }
+  50% {
+    transform: rotateX(90deg);
+  }
+  100% {
+    transform: rotateX(0deg);
+  }
+}
+.ticket-tile-flip {
+  animation: ticket-tile-flip 400ms ease;
+}
+
+@keyframes ticket-stamp-in {
+  to {
+    transform: rotate(-9deg) scale(1);
+    opacity: 1;
+  }
+}
+.ticket-stamp {
+  transform: rotate(-9deg) scale(0.4);
+  opacity: 0;
+  animation: ticket-stamp-in 500ms cubic-bezier(0.34, 1.56, 0.64, 1) 250ms
+    forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ticket-inner,
+  .ticket-shake,
+  .ticket-tile-flip,
+  .ticket-stamp,
+  .ticket-feed {
+    animation: none !important;
+    transition: none !important;
+  }
+  .ticket-stamp {
+    transform: rotate(-9deg) scale(1);
+    opacity: 1;
+  }
+}
+

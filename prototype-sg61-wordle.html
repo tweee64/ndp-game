@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SG61 Wordle — Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sg-navy:#0B1B2E; --sg-navy-deep:#050C16; --sg-panel:#101F33;
+    --drone-gold:#E8B23D; --sg-red:#CE1126; --sg-white:#F5F5F0; --sg-mist:#8FA0B8; --sg-teal:#3F6F68;
+    --tile-empty:rgba(255,255,255,0.04); --tile-border:rgba(232,178,61,0.25);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; }
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 60% 40% at 20% 0%, rgba(232,178,61,0.08), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 0%, rgba(206,17,38,0.10), transparent 60%),
+      radial-gradient(ellipse 120% 80% at 50% 120%, var(--sg-navy), var(--sg-navy-deep));
+    font-family:'IBM Plex Sans', sans-serif; color:var(--sg-white);
+    display:flex; align-items:center; justify-content:center; overflow-x:hidden;
+  }
+  .stage{ position:relative; z-index:1; display:flex; flex-direction:column; align-items:center; padding:32px 14px 40px; width:100%; }
+  .hud{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; letter-spacing:.06em;
+    background:var(--sg-panel); border:1px solid rgba(232,178,61,0.25); border-radius:3px;
+    padding:8px 18px; margin-bottom:18px; display:flex; align-items:center; flex-wrap:wrap; justify-content:center; gap:2px 12px;
+    max-width:min(480px,92vw);
+  }
+  .hud b{ color:var(--drone-gold); }
+  .sep{ opacity:.35; }
+  .panel{
+    width:min(480px, 95vw); background:var(--sg-panel); border:1px solid rgba(232,178,61,0.25);
+    border-radius:6px; box-shadow:0 22px 48px rgba(0,0,0,.45); padding:24px 20px 22px; text-align:center;
+  }
+  .eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:.14em; color:var(--sg-teal); margin:0 0 8px; text-transform:uppercase; }
+  .title{ font-family:'Big Shoulders Display', sans-serif; font-weight:800; font-size:clamp(26px,6.5vw,38px); line-height:.95; margin:0 0 8px; color:var(--drone-gold); }
+  .sub{ font-size:13.5px; line-height:1.5; color:var(--sg-mist); margin:0 0 18px; }
+
+  .category-tag{
+    display:inline-block; font-family:'IBM Plex Mono', monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--sg-teal); border:1px solid var(--sg-teal); border-radius:2px; padding:3px 10px; margin-bottom:10px;
+  }
+  .clue{ font-size:13.5px; line-height:1.5; color:var(--sg-white); background:rgba(0,0,0,0.2); border:1px solid rgba(232,178,61,0.2); border-radius:4px; padding:10px 14px; margin-bottom:12px; }
+  .clue b{ color:var(--drone-gold); }
+  .clue.locked{ color:var(--sg-mist); font-style:italic; }
+  .hint-btn{
+    font-size:11px; padding:9px 14px; margin:0 auto 18px; display:block;
+  }
+  .hint-btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .hint-btn:disabled:hover{ background:transparent; color:var(--sg-white); }
+
+  .grid{ display:flex; flex-direction:column; gap:6px; margin:0 auto 18px; align-items:center; }
+  .row{ display:flex; gap:6px; }
+  .row.shake{ animation:shakeX .4s; }
+  @keyframes shakeX{
+    10%,90%{ transform:translateX(-2px); } 20%,80%{ transform:translateX(3px); }
+    30%,50%,70%{ transform:translateX(-5px); } 40%,60%{ transform:translateX(5px); }
+  }
+  .tile{
+    width:38px; height:38px; border:2px solid var(--tile-border); border-radius:3px; background:var(--tile-empty);
+    display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace; font-weight:600;
+    font-size:18px; text-transform:uppercase; color:var(--sg-white); transition:transform .15s ease;
+  }
+  .tile.filled{ border-color:rgba(245,245,240,0.4); transform:scale(1.03); }
+  .tile.correct{ background:var(--sg-teal); border-color:var(--sg-teal); }
+  .tile.present{ background:var(--drone-gold); border-color:var(--drone-gold); color:var(--sg-navy-deep); }
+  .tile.absent{ background:rgba(255,255,255,0.06); border-color:rgba(255,255,255,0.1); color:var(--sg-mist); }
+  .tile.flip{ animation:flipTile .4s ease; }
+  @keyframes flipTile{ 0%{ transform:rotateX(0deg); } 50%{ transform:rotateX(90deg); } 100%{ transform:rotateX(0deg); } }
+
+  .keyboard{ display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+  .krow{ display:flex; justify-content:center; gap:4px; }
+  .key{
+    font-family:'IBM Plex Mono', monospace; font-size:11.5px; font-weight:600; text-transform:uppercase;
+    background:rgba(255,255,255,0.06); color:var(--sg-white); border:none; border-radius:3px; padding:10px 8px;
+    min-width:26px; cursor:pointer; transition:background .15s ease;
+  }
+  .key.wide{ min-width:44px; font-size:10px; padding:10px 6px; }
+  .key:hover{ background:rgba(255,255,255,0.14); }
+  .key.correct{ background:var(--sg-teal); color:var(--sg-white); }
+  .key.present{ background:var(--drone-gold); color:var(--sg-navy-deep); }
+  .key.absent{ background:rgba(255,255,255,0.03); color:var(--sg-mist); }
+
+  .feedback{ font-family:'IBM Plex Mono', monospace; font-size:13px; min-height:18px; margin-bottom:6px; color:var(--sg-mist); }
+  .feedback.win{ color:var(--drone-gold); }
+  .feedback.lose{ color:var(--sg-red); }
+
+  .score-row{ display:flex; justify-content:space-between; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--sg-mist); margin-bottom:10px; }
+  .score-row b{ color:var(--sg-white); }
+
+  .btn{
+    font-family:'IBM Plex Mono', monospace; text-transform:uppercase; letter-spacing:.06em; font-size:12.5px; font-weight:600;
+    background:var(--sg-red); color:var(--sg-white); border:none; padding:14px 26px; border-radius:2px; cursor:pointer;
+    transition:transform .1s ease, background .15s ease; box-shadow:0 6px 0 #8a0d1c; width:100%;
+  }
+  .btn:hover{ background:#a30d1e; }
+  .btn:active{ transform:translateY(3px); box-shadow:0 3px 0 #8a0d1c; }
+  .btn.secondary{ background:transparent; border:1.5px solid var(--sg-white); box-shadow:none; width:auto; padding:12px 20px; }
+  .btn.secondary:hover{ background:var(--sg-white); color:var(--sg-navy-deep); }
+
+  .stamp{
+    font-family:'Big Shoulders Display', sans-serif; font-weight:800; font-size:24px; letter-spacing:.06em; color:var(--drone-gold);
+    border:3px solid var(--drone-gold); display:inline-block; padding:6px 16px; margin:14px 0 10px; transform:rotate(-6deg);
+  }
+  .recap{ text-align:left; font-family:'IBM Plex Mono', monospace; font-size:12px; color:var(--sg-mist); margin:0 0 14px; line-height:1.6; }
+  .recap b{ color:var(--sg-white); }
+  .toast{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--sg-teal); height:14px; margin-top:10px; opacity:0; transition:opacity .3s; }
+  .toast.show{ opacity:1; }
+  .hidden{ display:none !important; }
+  .actions{ display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px; }
+</style>
+</head>
+<body>
+  <main class="stage">
+    <div class="hud">
+      <span>ROUND <b id="hudRound">1</b>/3</span><span class="sep">·</span>
+      <span>GUESS <b id="hudGuess">1</b>/6</span><span class="sep">·</span>
+      <span>SCORE <b id="hudScore">0</b></span>
+    </div>
+
+    <div class="panel">
+      <div id="intro">
+        <p class="eyebrow">SG61 Wordle</p>
+        <h1 class="title">GUESS THE WORD</h1>
+        <p class="sub">3 rounds, 3 local words (Heartland Instinct → Kopitiam Terms → Local Slang). No clue upfront — guess it cold, or unlock a hint after 2 guesses for a score penalty. 6 guesses per word. 🟩 right spot · 🟨 right letter, wrong spot · ⬛ not in the word.</p>
+        <button class="btn" id="startBtn">Start Round 1 →</button>
+      </div>
+
+      <div id="game" class="hidden">
+        <span class="category-tag" id="categoryTag">CATEGORY</span>
+        <p class="clue" id="clueText"></p>
+        <button class="btn secondary hint-btn" id="hintBtn" disabled>🔒 Hint unlocks after 2 guesses</button>
+        <div class="grid" id="grid"></div>
+        <div class="feedback" id="feedback"></div>
+        <div class="keyboard" id="keyboard"></div>
+      </div>
+
+      <div id="finalScreen" class="hidden">
+        <p class="eyebrow">Grand Finale</p>
+        <div class="recap" id="recap"></div>
+        <div class="stamp" id="finalStamp">RESULT</div>
+        <p class="sub" id="finalNote"></p>
+        <div class="actions">
+          <button class="btn secondary" onclick="restart()">Play Again</button>
+          <button class="btn secondary" onclick="copyResult()">Copy Result</button>
+        </div>
+        <p class="toast" id="toast"></p>
+      </div>
+    </div>
+  </main>
+
+<script>
+  const WORD_BANK = {
+    instinct: [
+      { word: "CHOPE", clue: "To <b>reserve</b> a seat or table using a tissue packet or umbrella — without asking anyone." },
+      { word: "SABO", clue: "To (often jokingly) get a friend into trouble or make them look silly — short for 'sabotage'." },
+      { word: "LEPAK", clue: "To relax, chill, or hang out with no particular agenda." },
+    ],
+    kopitiam: [
+      { word: "KOSONG", clue: "Kopitiam term meaning '<b>no sugar</b>' when added after a drink order." },
+      { word: "PENG", clue: "Kopitiam term meaning '<b>iced</b>' when added after a drink order." },
+    ],
+    slang: [
+      { word: "SHIOK", clue: "Exclamation for something extremely satisfying, delicious, or enjoyable." },
+      { word: "KIASU", clue: "Afraid of losing out — always needs to come out ahead of everyone else." },
+      { word: "PAISEH", clue: "Feeling shy, embarrassed, or awkward about something." },
+      { word: "GOSTAN", clue: "To reverse a vehicle — from the English 'go astern'." },
+      { word: "ALAMAK", clue: "Exclamation of shock, dismay, or surprise." },
+      { word: "BLUR", clue: "Confused, clueless, or slow to catch on to what's happening." },
+    ],
+  };
+
+  const ROUND_ORDER = [
+    { key: "instinct", label: "HEARTLAND INSTINCT" },
+    { key: "kopitiam", label: "KOPITIAM TERMS" },
+    { key: "slang", label: "LOCAL SLANG" },
+  ];
+
+  const MAX_GUESSES = 6;
+  const HINT_UNLOCK_AT = 2;   // hint becomes available after this many guesses
+  const HINT_PENALTY = 150;   // points deducted if hint was used and word is later solved
+  const KEY_ROWS = [
+    "QWERTYUIOP".split(""),
+    "ASDFGHJKL".split(""),
+    ["ENTER", ..."ZXCVBNM".split(""), "BACK"],
+  ];
+
+  let roundIndex = 0;
+  let currentWordObj = null;
+  let currentGuess = "";
+  let guesses = [];       // array of { guess, statuses }
+  let guessCount = 0;
+  let score = 0;
+  let roundResults = [];  // { word, category, guesses: [statuses], solved, attempts }
+  let keyStatus = {};     // letter -> 'correct' | 'present' | 'absent'
+  let locked = false;
+  let hintUsed = false;
+
+  const hudRound = document.getElementById('hudRound');
+  const hudGuess = document.getElementById('hudGuess');
+  const hudScore = document.getElementById('hudScore');
+  const categoryTag = document.getElementById('categoryTag');
+  const clueText = document.getElementById('clueText');
+  const hintBtn = document.getElementById('hintBtn');
+  const gridEl = document.getElementById('grid');
+  const feedbackEl = document.getElementById('feedback');
+  const keyboardEl = document.getElementById('keyboard');
+
+  function pickWord(categoryKey){
+    const pool = WORD_BANK[categoryKey];
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function buildGrid(wordLength){
+    gridEl.innerHTML = '';
+    for (let r = 0; r < MAX_GUESSES; r++){
+      const row = document.createElement('div');
+      row.className = 'row';
+      row.id = 'row-' + r;
+      for (let c = 0; c < wordLength; c++){
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        tile.id = `tile-${r}-${c}`;
+        row.appendChild(tile);
+      }
+      gridEl.appendChild(row);
+    }
+  }
+
+  function buildKeyboard(){
+    keyboardEl.innerHTML = '';
+    KEY_ROWS.forEach(row => {
+      const krow = document.createElement('div');
+      krow.className = 'krow';
+      row.forEach(k => {
+        const btn = document.createElement('button');
+        btn.className = 'key' + (k === 'ENTER' || k === 'BACK' ? ' wide' : '');
+        btn.textContent = k === 'BACK' ? '⌫' : k;
+        btn.dataset.key = k;
+        btn.onclick = () => handleKey(k);
+        krow.appendChild(btn);
+      });
+      keyboardEl.appendChild(krow);
+    });
+  }
+
+  function refreshKeyboardColors(){
+    [...keyboardEl.querySelectorAll('.key')].forEach(btn => {
+      const k = btn.dataset.key;
+      btn.classList.remove('correct','present','absent');
+      if (keyStatus[k]) btn.classList.add(keyStatus[k]);
+    });
+  }
+
+  function renderCurrentGuess(){
+    const word = currentWordObj.word;
+    for (let c = 0; c < word.length; c++){
+      const tile = document.getElementById(`tile-${guessCount}-${c}`);
+      const ch = currentGuess[c] || '';
+      tile.textContent = ch;
+      tile.classList.toggle('filled', !!ch);
+    }
+  }
+
+  function evaluateGuess(guess, answer){
+    const result = Array(answer.length).fill('absent');
+    const answerArr = answer.split('');
+    const guessArr = guess.split('');
+    const counts = {};
+    answerArr.forEach(ch => counts[ch] = (counts[ch] || 0) + 1);
+
+    // pass 1: correct
+    guessArr.forEach((ch, i) => {
+      if (ch === answerArr[i]){ result[i] = 'correct'; counts[ch]--; }
+    });
+    // pass 2: present
+    guessArr.forEach((ch, i) => {
+      if (result[i] === 'correct') return;
+      if (counts[ch] > 0){ result[i] = 'present'; counts[ch]--; }
+    });
+    return result;
+  }
+
+  function handleKey(k){
+    if (locked) return;
+    const wordLen = currentWordObj.word.length;
+    if (k === 'BACK'){
+      currentGuess = currentGuess.slice(0, -1);
+      renderCurrentGuess();
+      return;
+    }
+    if (k === 'ENTER'){
+      if (currentGuess.length < wordLen){
+        shakeRow();
+        feedbackEl.textContent = 'Not enough letters';
+        feedbackEl.className = 'feedback';
+        return;
+      }
+      submitGuess();
+      return;
+    }
+    if (/^[A-Z]$/.test(k) && currentGuess.length < wordLen){
+      currentGuess += k;
+      renderCurrentGuess();
+    }
+  }
+
+  function shakeRow(){
+    const row = document.getElementById('row-' + guessCount);
+    row.classList.remove('shake');
+    void row.offsetWidth;
+    row.classList.add('shake');
+  }
+
+  function submitGuess(){
+    locked = true;
+    const answer = currentWordObj.word;
+    const statuses = evaluateGuess(currentGuess, answer);
+    const row = document.getElementById('row-' + guessCount);
+    const tiles = [...row.children];
+
+    tiles.forEach((tile, i) => {
+      setTimeout(() => {
+        tile.classList.add('flip');
+        setTimeout(() => tile.classList.add(statuses[i]), 200);
+      }, i * 220);
+    });
+
+    // update key statuses (priority: correct > present > absent)
+    currentGuess.split('').forEach((ch, i) => {
+      const s = statuses[i];
+      const prev = keyStatus[ch];
+      if (s === 'correct' || (s === 'present' && prev !== 'correct') || (!prev)){
+        if (!prev || (prev === 'absent' && s !== 'absent') || (prev === 'present' && s === 'correct') || s === 'correct'){
+          keyStatus[ch] = s;
+        }
+      }
+    });
+
+    const guessedWord = currentGuess;
+    guesses.push({ guess: guessedWord, statuses });
+    guessCount++;
+
+    setTimeout(() => {
+      refreshKeyboardColors();
+      hudGuess.textContent = Math.min(guessCount + 1, MAX_GUESSES);
+      const solved = guessedWord === answer;
+      if (solved){
+        const pointsTable = [700, 600, 500, 400, 300, 200];
+        let gained = pointsTable[guessCount - 1] ?? 100;
+        if (hintUsed) gained = Math.max(50, gained - HINT_PENALTY);
+        score += gained;
+        hudScore.textContent = score;
+        feedbackEl.textContent = hintUsed ? `Correct! +${gained} pts (hint penalty applied)` : `Correct! +${gained} pts`;
+        feedbackEl.className = 'feedback win';
+        finishRound(true, guessCount);
+      } else if (guessCount >= MAX_GUESSES){
+        feedbackEl.textContent = `Out of guesses — it was ${answer}`;
+        feedbackEl.className = 'feedback lose';
+        finishRound(false, guessCount);
+      } else {
+        feedbackEl.textContent = 'Keep going.';
+        feedbackEl.className = 'feedback';
+        currentGuess = '';
+        locked = false;
+        if (guessCount >= HINT_UNLOCK_AT && !hintUsed){
+          hintBtn.disabled = false;
+          hintBtn.textContent = `Reveal Hint (-${HINT_PENALTY} pts)`;
+        }
+      }
+    }, currentWordObj.word.length * 220 + 250);
+  }
+
+  function finishRound(solved, attempts){
+    roundResults.push({
+      word: currentWordObj.word,
+      category: ROUND_ORDER[roundIndex].label,
+      statuses: guesses.map(g => g.statuses),
+      solved, attempts,
+    });
+    setTimeout(() => {
+      if (roundIndex < ROUND_ORDER.length - 1){
+        roundIndex++;
+        startRound();
+      } else {
+        showFinal();
+      }
+    }, 1600);
+  }
+
+  function revealHint(){
+    if (hintUsed || guessCount < HINT_UNLOCK_AT) return;
+    hintUsed = true;
+    clueText.classList.remove('locked');
+    clueText.innerHTML = `<b>Clue:</b> ${currentWordObj.clue}`;
+    hintBtn.disabled = true;
+    hintBtn.textContent = `Hint revealed (-${HINT_PENALTY} pts if solved)`;
+  }
+
+  function startRound(){
+    const cat = ROUND_ORDER[roundIndex];
+    currentWordObj = pickWord(cat.key);
+    currentGuess = '';
+    guesses = [];
+    guessCount = 0;
+    keyStatus = {};
+    locked = false;
+    hintUsed = false;
+
+    hudRound.textContent = roundIndex + 1;
+    hudGuess.textContent = 1;
+    categoryTag.textContent = cat.label;
+    clueText.classList.add('locked');
+    clueText.innerHTML = `${currentWordObj.word.length} letters — clue locked. Guess it cold, or unlock a hint after ${HINT_UNLOCK_AT} guesses.`;
+    hintBtn.disabled = true;
+    hintBtn.textContent = `🔒 Hint unlocks after ${HINT_UNLOCK_AT} guesses`;
+    hintBtn.onclick = revealHint;
+    feedbackEl.textContent = 'Type your first guess.';
+    feedbackEl.className = 'feedback';
+
+    buildGrid(currentWordObj.word.length);
+    buildKeyboard();
+    refreshKeyboardColors();
+  }
+
+  document.getElementById('startBtn').onclick = () => {
+    document.getElementById('intro').classList.add('hidden');
+    document.getElementById('game').classList.remove('hidden');
+    roundIndex = 0; score = 0; roundResults = [];
+    hudScore.textContent = 0;
+    startRound();
+  };
+
+  window.addEventListener('keydown', (e) => {
+    if (document.getElementById('game').classList.contains('hidden')) return;
+    if (e.key === 'Enter') return handleKey('ENTER');
+    if (e.key === 'Backspace') return handleKey('BACK');
+    const k = e.key.toUpperCase();
+    if (/^[A-Z]$/.test(k)) handleKey(k);
+  });
+
+  function emojiRow(statuses){
+    return statuses.map(s => s === 'correct' ? '🟩' : s === 'present' ? '🟨' : '⬛').join('');
+  }
+
+  function showFinal(){
+    document.getElementById('game').classList.add('hidden');
+    const finalScreen = document.getElementById('finalScreen');
+    finalScreen.classList.remove('hidden');
+
+    const recapEl = document.getElementById('recap');
+    recapEl.innerHTML = roundResults.map(r =>
+      `<div><b>${r.word}</b> (${r.category}) — ${r.solved ? r.attempts + '/6' : 'X/6'}<br>${r.statuses.map(emojiRow).join('<br>')}</div>`
+    ).join('<br>');
+
+    const solvedCount = roundResults.filter(r => r.solved).length;
+    const totalAttempts = roundResults.reduce((sum, r) => sum + (r.solved ? r.attempts : MAX_GUESSES), 0);
+
+    let stamp, note;
+    if (solvedCount === 3 && totalAttempts <= 6){ stamp = 'WORDSMITH OF THE LITTLE RED DOT'; note = 'All three words, almost no wasted guesses. Certified local.'; }
+    else if (solvedCount === 3){ stamp = 'TRUE BLUE SINGAPOREAN'; note = 'Solved every word — a few guesses here and there, but you know your stuff.'; }
+    else if (solvedCount === 2){ stamp = 'CERTIFIED HEARTLANDER'; note = 'Two out of three — solid local vocabulary.'; }
+    else if (solvedCount === 1){ stamp = 'HONORARY PR'; note = 'One word landed. Time to lepak at more kopitiams.'; }
+    else { stamp = 'TOURIST VIBES'; note = 'None landed this time — the Singlish dictionary awaits.'; }
+
+    document.getElementById('finalStamp').textContent = stamp;
+    document.getElementById('finalNote').textContent = note;
+  }
+
+  function copyResult(){
+    const lines = roundResults.map(r => `${r.word}: ${r.solved ? r.attempts + '/6' : 'X/6'}\n${r.statuses.map(emojiRow).join('\n')}`);
+    const text = `SG61 Wordle — ${score} pts\n\n${lines.join('\n\n')}`;
+    const toast = document.getElementById('toast');
+    navigator.clipboard.writeText(text).then(() => {
+      toast.textContent = 'Copied to clipboard'; toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 1600);
+    }).catch(() => {
+      toast.textContent = 'Copy not available — screenshot instead'; toast.classList.add('show');
+    });
+  }
+
+  function restart(){
+    document.getElementById('finalScreen').classList.add('hidden');
+    document.getElementById('intro').classList.remove('hidden');
+  }
+</script>
+</body>
+</html>

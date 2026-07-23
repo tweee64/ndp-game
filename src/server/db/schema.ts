@@ -25,3 +25,19 @@ export const posts = createTable(
   }),
   (t) => [index("name_idx").on(t.name)],
 );
+
+export const wordleScores = createTable(
+  "wordle_score",
+  (d) => ({
+    id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
+    playerName: d.text({ length: 40 }).notNull(),
+    score: d.integer({ mode: "number" }).notNull(),
+    wordsSolved: d.integer({ mode: "number" }).notNull(),
+    totalWords: d.integer({ mode: "number" }).notNull(),
+    createdAt: d
+      .integer({ mode: "timestamp" })
+      .default(sql`(unixepoch())`)
+      .notNull(),
+  }),
+  (t) => [index("wordle_score_score_idx").on(t.score)],
+);
