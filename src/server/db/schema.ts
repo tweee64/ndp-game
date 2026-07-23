@@ -2,7 +2,7 @@
 // https://orm.drizzle.team/docs/sql-schema-declaration
 
 import { sql } from "drizzle-orm";
-import { index, sqliteTableCreator } from "drizzle-orm/sqlite-core";
+import { index, pgTableCreator } from "drizzle-orm/pg-core";
 
 /**
  * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
@@ -10,18 +10,18 @@ import { index, sqliteTableCreator } from "drizzle-orm/sqlite-core";
  *
  * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
  */
-export const createTable = sqliteTableCreator((name) => `ndp-game_${name}`);
+export const createTable = pgTableCreator((name) => `ndp-game_${name}`);
 
 export const posts = createTable(
   "post",
   (d) => ({
-    id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
-    name: d.text({ length: 256 }),
+    id: d.integer().primaryKey().generatedAlwaysAsIdentity(),
+    name: d.varchar({ length: 256 }),
     createdAt: d
-      .integer({ mode: "timestamp" })
-      .default(sql`(unixepoch())`)
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
-    updatedAt: d.integer({ mode: "timestamp" }).$onUpdate(() => new Date()),
+    updatedAt: d.timestamp({ withTimezone: true }).$onUpdate(() => new Date()),
   }),
   (t) => [index("name_idx").on(t.name)],
 );
@@ -29,14 +29,14 @@ export const posts = createTable(
 export const wordleScores = createTable(
   "wordle_score",
   (d) => ({
-    id: d.integer({ mode: "number" }).primaryKey({ autoIncrement: true }),
-    playerName: d.text({ length: 40 }).notNull(),
-    score: d.integer({ mode: "number" }).notNull(),
-    wordsSolved: d.integer({ mode: "number" }).notNull(),
-    totalWords: d.integer({ mode: "number" }).notNull(),
+    id: d.integer().primaryKey().generatedAlwaysAsIdentity(),
+    playerName: d.varchar({ length: 40 }).notNull(),
+    score: d.integer().notNull(),
+    wordsSolved: d.integer().notNull(),
+    totalWords: d.integer().notNull(),
     createdAt: d
-      .integer({ mode: "timestamp" })
-      .default(sql`(unixepoch())`)
+      .timestamp({ withTimezone: true })
+      .default(sql`CURRENT_TIMESTAMP`)
       .notNull(),
   }),
   (t) => [index("wordle_score_score_idx").on(t.score)],
